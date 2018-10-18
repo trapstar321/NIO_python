@@ -1,8 +1,10 @@
 import select
 import socket
-from multiprocessing.reduction import rebuild_handle
-from multiprocessing.reduction import reduce_handle 
-from common.log_optional import Logger 
+#from multiprocessing.reduction import rebuild_handle
+#sfrom multiprocessing.reduction import reduce_handle
+from common.log_optional import Logger
+import multiprocessing
+multiprocessing.allow_connection_pickling()
 
 lastHandler = -1
 
@@ -14,12 +16,12 @@ def get_handler(nHandlers):
         lastHandler+=1;
     return lastHandler; 
 
-def accept(h, udp_port, client_queue, nHandlers, debug):    
+def accept(server, udp_port, client_queue, nHandlers, debug):
     try:
         logger=Logger(debug) 
             
-        fd=rebuild_handle(h)
-        server=socket.fromfd(fd,socket.AF_INET,socket.SOCK_STREAM)
+        #fd=rebuild_handle(h)
+        #server=socket.fromfd(fd,socket.AF_INET,socket.SOCK_STREAM)
         
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.bind(('127.0.0.1', udp_port))        
@@ -42,9 +44,9 @@ def accept(h, udp_port, client_queue, nHandlers, debug):
                     
                     logger.log('accept: add connection {0} to handler {1}'.format(client_address, handler))
                     
-                    h = reduce_handle(connection.fileno())                 
+                    #h = reduce_handle(connection.fileno())
                     
-                    client_queue[handler].put(h)
+                    client_queue[handler].put(connection)
                     #connection.close()
                 elif s is sock:
                     s.recvfrom(8)

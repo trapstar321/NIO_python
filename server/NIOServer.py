@@ -4,7 +4,10 @@ from server.handler import run
 import datetime
 import time
 
-from multiprocessing.reduction import reduce_handle
+import multiprocessing
+multiprocessing.allow_connection_pickling()
+
+#from multiprocessing.reduction import reduce_handle
 from server.accept import accept
 from common.log_optional import Logger
 
@@ -102,12 +105,12 @@ class Server(object):
         
         self.__initHandlers()       
         
-        h = reduce_handle(self.server.fileno())      
+        #h = reduce_handle(self.server.fileno())
         
         self.start_udp_port+=1
         self.stop_accept_udp_port=self.start_udp_port
-        self.pool.apply_async(accept, (h, self.start_udp_port, self.client_queue, self.nHandlers, self.debug)) 
-    
+        self.pool.apply_async(accept, (server, self.start_udp_port, self.client_queue, self.nHandlers, self.debug))
+
     def get_stats(self):
         pings = []
         for x in range(0, self.nHandlers):
@@ -175,7 +178,7 @@ if __name__ == '__main__':
         print(ex)   
 
     #return
-    time.sleep(30) 
+    time.sleep(30)
     s.shutdown()
     #print('Server shutdown complete') 
     #s.start()  

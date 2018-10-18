@@ -5,12 +5,15 @@ import time
 import select
 import socket
 import datetime
-from multiprocessing.reduction import rebuild_handle 
+#from multiprocessing.reduction import rebuild_handle
 import queue
 
 n=0
 
-def run(idx, handle, udp_port, lock, flag, debug, read_queue, write_queue, pings):    
+import multiprocessing
+multiprocessing.allow_connection_pickling()
+
+def run(idx, client, udp_port, lock, flag, debug, read_queue, write_queue, pings):
     global n    
     
     logger=Logger(debug)    
@@ -20,8 +23,8 @@ def run(idx, handle, udp_port, lock, flag, debug, read_queue, write_queue, pings
     inputs = []
     outputs=[]
     
-    fd=rebuild_handle(handle)
-    client=socket.fromfd(fd,socket.AF_INET,socket.SOCK_STREAM)   
+    #fd=rebuild_handle(handle)
+    #client=socket.fromfd(fd,socket.AF_INET,socket.SOCK_STREAM)
     connection = Connection(client)
    
     inputs.append(client)

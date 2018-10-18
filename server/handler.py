@@ -4,7 +4,7 @@ from common.input_output import read, write, add_messages_to_write_buffer
 import queue
 import select
 import socket
-from multiprocessing.reduction import rebuild_handle
+#from multiprocessing.reduction import rebuild_handle
 import datetime
 import time
 
@@ -34,21 +34,21 @@ def run(idx, udp_port, flag, lock, client_queue, read_queue, write_queue, debug,
         while True:    
             try:        
                 if len(server_connections)>0:                        
-                    h = client_queue.get(False)
+                    client = client_queue.get(False)
                 else:
-                    h = client_queue.get()
+                    client = client_queue.get()
             except queue.Empty:
                 pass
             except Exception as ex:
                 logger.log(ex) 
             else:  
-                if h=={}:
+                if client=={}:
                     logger.log('Handler {0}: exit'.format(idx))
                     close_clients(idx, logger, server_connections)
                     return
                 
-                fd=rebuild_handle(h)
-                client=socket.fromfd(fd,socket.AF_INET,socket.SOCK_STREAM)
+                #fd=rebuild_handle(h)
+                #client=socket.fromfd(fd,socket.AF_INET,socket.SOCK_STREAM)
                 logger.log('Handler {0} got new client {1}'.format(idx, client.getpeername()))                   
                 inputs.append(client)
                 sc = Connection(client)
@@ -202,7 +202,7 @@ def run(idx, udp_port, flag, lock, client_queue, read_queue, write_queue, debug,
                         inputs.remove(client)
                     del connection_ids[server_connections[client].id]
                     del server_connections[client]                
-                    client.close()    
+                    client.close()
                     
                     lock.acquire()
                     client_cnt.value-=1

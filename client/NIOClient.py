@@ -1,15 +1,17 @@
 from multiprocessing import Manager, Pool
 import socket
 from client.handler import run
-from multiprocessing.reduction import reduce_handle
+#from multiprocessing.reduction import reduce_handle
 import datetime
 import time
 from client.messages.CM_PING import CM_PING
+import multiprocessing
+multiprocessing.allow_connection_pickling()
 
 class Handler(object):
-    def __init__(self, h, manager, pool, udp_port, run, forwarder, processor, debug):        
+    def __init__(self, client, manager, pool, udp_port, run, forwarder, processor, debug):
         self.idx=1
-        self.h=h
+        self.client = client
         self.pool=pool
         self.udp_port = udp_port
         self.debug=debug        
@@ -24,7 +26,8 @@ class Handler(object):
         self.pings=manager.Queue()        
     
     def start(self):
-        self.pool.apply_async(self.run, (1,self.h,self.udp_port, self.lock, self.flag, self.debug, self.read_queue, self.write_queue, self.pings))  
+        client = self.client
+        self.pool.apply_async(self.run, (1, client, self.udp_port, self.lock, self.flag, self.debug, self.read_queue, self.write_queue, self.pings))
         self.pool.apply_async(self.forwarder, (self.udp_port, self.read_queue, self.write_queue, self.processor, self.debug, self.pings))
         
     def shutdown(self):
@@ -67,9 +70,8 @@ class Client(object):
         return (self.end_time-self.start_time).microseconds/1000
 
     def __initHandler(self):  
-        h = reduce_handle(self.client.fileno())
-        
-        self.handler = Handler(h, self.manager, self.pool, self.udp_port, run, self.forwarder, self.msg_processor, self.debug)
+        #h = reduce_handle(self.client.fileno())
+        self.handler = Handler(self.client, self.manager, self.pool, self.udp_port, run, self.forwarder, self.msg_processor, self.debug)
         self.handler.start()
         
     def start(self):
@@ -86,7 +88,7 @@ class Client(object):
         #print('Connected to server on {0}'.format(self.server_address))
         
         self.__initHandler()
-        client.close()
+        #client.close()
     
     
     def shutdown(self):
@@ -108,31 +110,31 @@ if __name__ == '__main__':
     
     clients = []
     
-    for x in range(0,1):
-        c = Client(("localhost", 10000), True, forward_messages, process_messages)
-        clients.append(c)    
-        c.start()
+    #for x in range(0,1):
+    c = Client(("localhost", 10000), True, forward_messages, process_messages)
+    clients.append(c)
+    c.start()
+
+    msg = CM_PING("a"*32)
+    c.handler.write_queue.put([{"opcode":type(msg).OP_CODE, "data":msg.get_data()}])
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.sendto(b'1', ('127.0.0.1', c.udp_port))
         
-        msg = CM_PING("a"*32) 
-        c.handler.write_queue.put([{"opcode":type(msg).OP_CODE, "data":msg.get_data()}])
+        # time.sleep(2)
+        # c.shutdown()
+        #
+        # time.sleep(2)
+        # c.start()
+        #
+        # msg = CM_PING("a"*32)
+        # c.handler.write_queue.put([{"opcode":type(msg).OP_CODE, "data":msg.get_data()}])
+        #
+        # sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        # sock.sendto(b'1', ('127.0.0.1', c.udp_port))
         
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.sendto(b'1', ('127.0.0.1', c.udp_port))
-        
-        time.sleep(2)
-        c.shutdown()
-        
-        time.sleep(2)
-        c.start()
-        
-        msg = CM_PING("a"*32) 
-        c.handler.write_queue.put([{"opcode":type(msg).OP_CODE, "data":msg.get_data()}])
-        
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.sendto(b'1', ('127.0.0.1', c.udp_port))
-        
-        time.sleep(2)
-        c.shutdown()
+    time.sleep(20)
+    c.shutdown()
         
     time.sleep(10)
     
