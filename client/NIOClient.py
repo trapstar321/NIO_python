@@ -1,10 +1,10 @@
 from multiprocessing import Manager, Pool
 import socket
-from client.handler import run
+from NIO_python.client.handler import run
 #from multiprocessing.reduction import reduce_handle
 import datetime
 import time
-from client.messages.CM_PING import CM_PING
+#from NIO_python.client.messages.CM_PING import CM_PING
 import multiprocessing
 multiprocessing.allow_connection_pickling()
 
@@ -14,6 +14,7 @@ class Handler(object):
         self.client = client
         self.pool=pool
         self.udp_port = udp_port
+
         self.debug=debug        
         
         self.run=run
@@ -28,7 +29,8 @@ class Handler(object):
     def start(self):
         client = self.client
         self.pool.apply_async(self.run, (1, client, self.udp_port, self.lock, self.flag, self.debug, self.read_queue, self.write_queue, self.pings))
-        self.pool.apply_async(self.forwarder, (self.udp_port, self.read_queue, self.write_queue, self.processor, self.debug, self.pings))
+        if self.forwarder is not None:
+            self.pool.apply_async(self.forwarder, (self.udp_port, self.read_queue, self.write_queue, self.processor, self.debug, self.pings))
         
     def shutdown(self):
         #exit forwarder            
@@ -44,10 +46,14 @@ class Handler(object):
 
 class Client(object):
     udp_port=10000
-    
-    def __init__(self, server_address, debug, forwarder, msg_processor):
-        Client.udp_port+=1
-        self.udp_port=Client.udp_port        
+
+    def __init__(self, server_address, udp_port, debug, forwarder, msg_processor):
+        if udp_port is None:
+            Client.udp_port+=1
+            self.udp_port = Client.udp_port
+        else:
+            self.udp_port = udp_port
+
         self.server_address = server_address
         self.client = None        
         self.debug=debug
@@ -120,6 +126,9 @@ if __name__ == '__main__':
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.sendto(b'1', ('127.0.0.1', c.udp_port))
+
+    while True:
+        time.sleep(1)
         
         # time.sleep(2)
         # c.shutdown()
@@ -133,26 +142,26 @@ if __name__ == '__main__':
         # sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         # sock.sendto(b'1', ('127.0.0.1', c.udp_port))
         
-    time.sleep(20)
-    c.shutdown()
-        
-    time.sleep(10)
-    
-    for c in clients:
-        pings = []
-        pings.extend(c.get_stats())
-            
-        print([[x,pings.count(x)] for x in set(pings)])
-        
-        print('Max ping was {0} ms'.format(max(pings)))
-        print('Average ping was {0} is: {1}'.format(c, sum(pings)/float(len(pings))))
-    
-    #4 processes = 2.17 ms
-    #1 processes = 2.34 ms
-    #2 processes = 2.62 ms
-    #3 processes = 1.74 ms
-    #5 processes = 2.03 ms
-    #8 processes = 2.15 ms
+    # time.sleep(20)
+    # c.shutdown()
+    #
+    # time.sleep(10)
+    #
+    # for c in clients:
+    #     pings = []
+    #     pings.extend(c.get_stats())
+    #
+    #     print([[x,pings.count(x)] for x in set(pings)])
+    #
+    #     print('Max ping was {0} ms'.format(max(pings)))
+    #     print('Average ping was {0} is: {1}'.format(c, sum(pings)/float(len(pings))))
+    #
+    # #4 processes = 2.17 ms
+    # #1 processes = 2.34 ms
+    # #2 processes = 2.62 ms
+    # #3 processes = 1.74 ms
+    # #5 processes = 2.03 ms
+    # #8 processes = 2.15 ms
         
     
     

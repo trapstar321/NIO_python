@@ -4,12 +4,12 @@ from server.messages.SM_PONG import SM_PONG
 from common.log_optional import Logger
 
 def forward_messages(udp_port, read_queue, write_queue, process_messages, debug):
-    global sent, x, g
+    global sent
     logger = Logger(debug)
     while True:
-        try:            
-            messages = read_queue.get() 
-        except queue.Empty:                  
+        try:
+            messages = read_queue.get()
+        except queue.Empty:
             pass
         else:
             try:
@@ -18,11 +18,13 @@ def forward_messages(udp_port, read_queue, write_queue, process_messages, debug)
                     return
 
                 processed_messages = []
-                for message in messages:
-                    logger.log(g)
-                    msg = SM_PONG("a"*32)
-                    processed_messages.append({"id":message["id"],"opcode":type(msg).OP_CODE, "data":msg.get_data()})                
-                write_queue.put(processed_messages)                
+                #logger.log("forward_messages: message={0}".format(messages))
+                process_messages(messages, None)
+                #for message in messages:
+                    #process_messages(message)
+                    #msg = SM_PONG("a"*32)
+                    #processed_messages.append({"id":message["id"],"opcode":type(msg).OP_CODE, "data":msg.get_data()})
+                #write_queue.put(processed_messages)
                 
                 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 sock.sendto(b'1', ('127.0.0.1', udp_port))

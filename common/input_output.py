@@ -101,12 +101,13 @@ def write(idx, server_connection, logger):
     return 0
         
 def add_messages_to_write_buffer(idx, server_connection, message, logger):
-    logger.log("Handler {0}: send message {1}".format(idx,message))                        
-    
+    logger.log("Handler {0}: send message {1}".format(idx, message))
+
     buffer = bytearray()                
     buffer.extend(struct.pack('<I', len(message["data"])))                
     buffer.extend(struct.pack('<B', message["opcode"]))
     buffer.extend(message["data"])
+
     #logger.log("Handler {0}: add {1} to write buffer for client {1}".format(idx, buffer, client))
     
     write_buffer = server_connection.write_buffer

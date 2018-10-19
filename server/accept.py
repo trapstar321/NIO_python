@@ -16,7 +16,7 @@ def get_handler(nHandlers):
         lastHandler+=1;
     return lastHandler; 
 
-def accept(server, udp_port, client_queue, nHandlers, debug):
+def accept(server, udp_port, handler_udp_ports, client_queue, nHandlers, debug):
     try:
         logger=Logger(debug) 
             
@@ -36,7 +36,7 @@ def accept(server, udp_port, client_queue, nHandlers, debug):
                 if s is server:
                     connection, client_address = s.accept()
                     connection.setblocking(0) 
-                    logger.log('accept: new connection from {0}'.format(client_address))                                      
+                    logger.log('accept: new connection from {0}'.format(client_address))
                     
                     
                     handler = get_handler(nHandlers)                
@@ -47,6 +47,11 @@ def accept(server, udp_port, client_queue, nHandlers, debug):
                     #h = reduce_handle(connection.fileno())
                     
                     client_queue[handler].put(connection)
+
+                    for handler_udp_port in handler_udp_ports:
+                        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                        sock.sendto(b'1', ('127.0.0.1', handler_udp_port))
+                        #print('Try unblock select on udp port {0}'.format(handler_udp_port))
                     #connection.close()
                 elif s is sock:
                     s.recvfrom(8)

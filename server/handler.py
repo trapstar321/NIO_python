@@ -1,6 +1,9 @@
 from common.connection import Connection
 from common.log_optional import Logger
 from common.input_output import read, write, add_messages_to_write_buffer
+from NIO_python.server.messages.SM_CONNECTED import SM_CONNECTED
+from NIO_python.server.messages.SM_DISCONNECTED import SM_DISCONNECTED
+
 import queue
 import select
 import socket
@@ -27,6 +30,7 @@ def run(idx, udp_port, flag, lock, client_queue, read_queue, write_queue, debug,
     connection_ids = {} 
     
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    #print('Handler udp port={0}'.format(udp_port))
     sock.bind(('127.0.0.1', udp_port))
     inputs.append(sock)
     
@@ -49,12 +53,14 @@ def run(idx, udp_port, flag, lock, client_queue, read_queue, write_queue, debug,
                 
                 #fd=rebuild_handle(h)
                 #client=socket.fromfd(fd,socket.AF_INET,socket.SOCK_STREAM)
-                logger.log('Handler {0} got new client {1}'.format(idx, client.getpeername()))                   
+                print('Handler {0} got new client {1}'.format(idx, client.getpeername()))
                 inputs.append(client)
                 sc = Connection(client)
                 server_connections[client]=sc     
-                connection_ids[sc.id]=sc                                       
-                
+                connection_ids[sc.id]=sc
+
+                read_queue.put([{"opcode": SM_CONNECTED.OP_CODE, "data": str(sc.id), "client":sc, "id": sc.id}])
+
                 lock.acquire()
                 client_cnt.value+=1
                 lock.release()
@@ -68,7 +74,6 @@ def run(idx, udp_port, flag, lock, client_queue, read_queue, write_queue, debug,
                 for message in messages:
                     connection = connection_ids[message["id"]]
                     add_messages_to_write_buffer(idx, connection, message, logger)
-                    
                     if not connection.connection in outputs:
                         outputs.append(connection.connection)
                     if connection.connection in inputs:
@@ -81,7 +86,9 @@ def run(idx, udp_port, flag, lock, client_queue, read_queue, write_queue, debug,
             logger.log('Handler {0}: inputs={1}, outputs={2}'.format(idx, inputs, outputs))
             
             s=datetime.datetime.now()
+            #print("Block on select")
             readable,writable,exceptional = select.select(inputs, outputs, inputs)
+            #print("Unblock on select")
             e=datetime.datetime.now()
             s = (e-s).microseconds/1000
             stats.put(s)
@@ -131,6 +138,10 @@ def run(idx, udp_port, flag, lock, client_queue, read_queue, write_queue, debug,
                             inputs.remove(client)    
                         if client in outputs:  
                             outputs.remove(client)
+
+                        read_queue.put([{"opcode": SM_DISCONNECTED.OP_CODE, "data": str(server_connections[client].id),
+                                         "client": server_connections[client], "id": server_connections[client].id}])
+
                         del connection_ids[server_connections[client].id]
                         del server_connections[client]
                         
@@ -145,7 +156,11 @@ def run(idx, udp_port, flag, lock, client_queue, read_queue, write_queue, debug,
                     if client in outputs:               
                         outputs.remove(client)                
                     if client in inputs:                                    
-                        inputs.remove(client)                
+                        inputs.remove(client)
+
+                    read_queue.put([{"opcode": SM_DISCONNECTED.OP_CODE, "data": str(server_connections[client].id),
+                                     "client": server_connections[client], "id": server_connections[client].id}])
+
                     del connection_ids[server_connections[client].id]
                     del server_connections[client]                
                     client.close()
@@ -186,9 +201,13 @@ def run(idx, udp_port, flag, lock, client_queue, read_queue, write_queue, debug,
                             inputs.remove(client)    
                         if client in outputs:  
                             outputs.remove(client)
+
+                        read_queue.put([{"opcode": SM_DISCONNECTED.OP_CODE, "data": str(server_connections[client].id),
+                                         "client": server_connections[client], "id": server_connections[client].id}])
+
                         del connection_ids[server_connections[client].id]
-                        del server_connections[client]  
-                        
+                        del server_connections[client]
+
                         lock.acquire()
                         client_cnt.value-=1
                         lock.release()                      
@@ -200,6 +219,10 @@ def run(idx, udp_port, flag, lock, client_queue, read_queue, write_queue, debug,
                         outputs.remove(client)
                     if client in inputs:                                    
                         inputs.remove(client)
+
+                    read_queue.put([{"opcode": SM_DISCONNECTED.OP_CODE, "data": str(server_connections[client].id),
+                                     "client": server_connections[client], "id": server_connections[client].id}])
+
                     del connection_ids[server_connections[client].id]
                     del server_connections[client]                
                     client.close()

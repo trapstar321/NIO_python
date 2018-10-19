@@ -1,6 +1,8 @@
 from multiprocessing import Manager,Pool
 import socket
-from server.handler import run
+
+from common.log_optional import Logger
+from NIO_python.server.handler import run
 import datetime
 import time
 
@@ -8,8 +10,7 @@ import multiprocessing
 multiprocessing.allow_connection_pickling()
 
 #from multiprocessing.reduction import reduce_handle
-from server.accept import accept
-from common.log_optional import Logger
+from NIO_python.server.accept import accept
 
 class Handler(object):
     def __init__(self, idx, manager, pool, client_queue, udp_port, run, forwarder, processor, debug):        
@@ -109,7 +110,12 @@ class Server(object):
         
         self.start_udp_port+=1
         self.stop_accept_udp_port=self.start_udp_port
-        self.pool.apply_async(accept, (server, self.start_udp_port, self.client_queue, self.nHandlers, self.debug))
+
+        handler_udp_ports = []
+        for x in range(0, self.nHandlers):
+            handler_udp_ports.append(self.handlers[x].udp_port)
+
+        self.pool.apply_async(accept, (server, self.start_udp_port, handler_udp_ports, self.client_queue, self.nHandlers, self.debug))
 
     def get_stats(self):
         pings = []
@@ -177,16 +183,19 @@ if __name__ == '__main__':
     except Exception as ex:
         print(ex)   
 
-    #return
-    time.sleep(30)
-    s.shutdown()
-    #print('Server shutdown complete') 
-    #s.start()  
-    
-    pings = s.get_stats()
-        
-    print([[x,pings.count(x)] for x in set(pings)])
-        
-    print('Max ping was {0} ms'.format(max(pings)))
-    print('Average ping is: {0}'.format(sum(pings)/float(len(pings))))
+    while True:
+        time.sleep(1)
+
+    # #return
+    # time.sleep(30)
+    # s.shutdown()
+    # #print('Server shutdown complete')
+    # #s.start()
+    #
+    # pings = s.get_stats()
+    #
+    # print([[x,pings.count(x)] for x in set(pings)])
+    #
+    # print('Max ping was {0} ms'.format(max(pings)))
+    # print('Average ping is: {0}'.format(sum(pings)/float(len(pings))))
 
