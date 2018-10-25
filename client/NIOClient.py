@@ -109,6 +109,12 @@ class Client(object):
             ping = self.handler.pings.get()
             pings.append(ping)
         return pings
+
+    def status(self):
+        self.handler.lock.acquire()
+        status = self.handler.flag.value
+        self.handler.lock.release()
+        return status
            
 if __name__ == '__main__':    
     from client.message_forwarder import forward_messages

@@ -13,8 +13,32 @@ n=0
 import multiprocessing
 multiprocessing.allow_connection_pickling()
 
+#flag values:
+# 1 = shutdown request
+# 4 = exited
+# 2 = started
+# 3 = disconnected
+
+def notify_disconnected(lock, flag):
+    lock.acquire()
+    flag.value = 3
+    lock.release()
+
+
+def notify_started(lock, flag):
+    lock.acquire()
+    flag.value = 2
+    lock.release()
+
+
+def notify_exited(lock, flag):
+    lock.acquire()
+    flag.value = 4
+    lock.release()
+
+
 def run(idx, client, udp_port, lock, flag, debug, read_queue, write_queue, pings):
-    global n    
+    notify_started(lock, flag)
     
     logger=Logger(debug)    
        
@@ -72,6 +96,7 @@ def run(idx, client, udp_port, lock, flag, debug, read_queue, write_queue, pings
                 lock.release()
                 
                 if exit_:
+                    notify_exited(lock, flag)
                     return
                 else:                
                     continue
@@ -96,7 +121,8 @@ def run(idx, client, udp_port, lock, flag, debug, read_queue, write_queue, pings
                     if client in outputs:               
                         outputs.remove(client)                
                     if client in inputs:                                    
-                        inputs.remove(client)                     
+                        inputs.remove(client)
+                    notify_disconnected(lock, flag)
                     return
                 except ValueError as error:
                     logger.log('Handler {0}: client {1} disconnected'.format(idx, client.getpeername()))
@@ -104,7 +130,8 @@ def run(idx, client, udp_port, lock, flag, debug, read_queue, write_queue, pings
                         outputs.remove(client)                
                     if client in inputs:                                    
                         inputs.remove(client)                
-                    client.close()  
+                    client.close()
+                    notify_disconnected(lock, flag)
                     return
                 
             if len(all_messages)>0:                
@@ -128,7 +155,8 @@ def run(idx, client, udp_port, lock, flag, debug, read_queue, write_queue, pings
                     if client in outputs:               
                         outputs.remove(client)                
                     if client in inputs:                                    
-                        inputs.remove(client)                     
+                        inputs.remove(client)
+                    notify_disconnected(lock, flag)
                     return
                 except ValueError as error:
                     logger.log('Handler {0}: client {1} disconnected'.format(idx, client.getpeername()))
@@ -137,6 +165,7 @@ def run(idx, client, udp_port, lock, flag, debug, read_queue, write_queue, pings
                     if client in inputs:                                    
                         inputs.remove(client)
                     client.close()
+                    notify_disconnected(lock, flag)
                     return
     
             # Handle "exceptional conditions"
@@ -147,5 +176,6 @@ def run(idx, client, udp_port, lock, flag, debug, read_queue, write_queue, pings
                 outputs.remove(client)
                 client.close()
     except Exception as ex:
-        logger.log('Handler {0}: exception: {1}'.format(idx, ex))       
+        logger.log('Handler {0}: exception: {1}'.format(idx, ex))
+    notify_exited(lock, flag)
     

@@ -7,4 +7,4 @@ class SM_DISCONNECTED(ServerMessage):
     def __init__(self, data):
         ServerMessage.__init__(self, data)
 
-        self.idx = self.get_string()
+        self.idx = self.get_object()

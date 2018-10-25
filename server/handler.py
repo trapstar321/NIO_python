@@ -59,7 +59,7 @@ def run(idx, udp_port, flag, lock, client_queue, read_queue, write_queue, debug,
                 server_connections[client]=sc     
                 connection_ids[sc.id]=sc
 
-                read_queue.put([{"opcode": SM_CONNECTED.OP_CODE, "data": str(sc.id), "client":sc, "id": sc.id}])
+                read_queue.put([{"opcode": SM_CONNECTED.OP_CODE, "data": sc.id, "client":sc, "id": sc.id}])
 
                 lock.acquire()
                 client_cnt.value+=1
@@ -139,7 +139,7 @@ def run(idx, udp_port, flag, lock, client_queue, read_queue, write_queue, debug,
                         if client in outputs:  
                             outputs.remove(client)
 
-                        read_queue.put([{"opcode": SM_DISCONNECTED.OP_CODE, "data": str(server_connections[client].id),
+                        read_queue.put([{"opcode": SM_DISCONNECTED.OP_CODE, "data": server_connections[client].id,
                                          "client": server_connections[client], "id": server_connections[client].id}])
 
                         del connection_ids[server_connections[client].id]
@@ -158,7 +158,7 @@ def run(idx, udp_port, flag, lock, client_queue, read_queue, write_queue, debug,
                     if client in inputs:                                    
                         inputs.remove(client)
 
-                    read_queue.put([{"opcode": SM_DISCONNECTED.OP_CODE, "data": str(server_connections[client].id),
+                    read_queue.put([{"opcode": SM_DISCONNECTED.OP_CODE, "data": server_connections[client].id,
                                      "client": server_connections[client], "id": server_connections[client].id}])
 
                     del connection_ids[server_connections[client].id]
@@ -202,7 +202,7 @@ def run(idx, udp_port, flag, lock, client_queue, read_queue, write_queue, debug,
                         if client in outputs:  
                             outputs.remove(client)
 
-                        read_queue.put([{"opcode": SM_DISCONNECTED.OP_CODE, "data": str(server_connections[client].id),
+                        read_queue.put([{"opcode": SM_DISCONNECTED.OP_CODE, "data": server_connections[client].id,
                                          "client": server_connections[client], "id": server_connections[client].id}])
 
                         del connection_ids[server_connections[client].id]
@@ -220,7 +220,7 @@ def run(idx, udp_port, flag, lock, client_queue, read_queue, write_queue, debug,
                     if client in inputs:                                    
                         inputs.remove(client)
 
-                    read_queue.put([{"opcode": SM_DISCONNECTED.OP_CODE, "data": str(server_connections[client].id),
+                    read_queue.put([{"opcode": SM_DISCONNECTED.OP_CODE, "data": server_connections[client].id,
                                      "client": server_connections[client], "id": server_connections[client].id}])
 
                     del connection_ids[server_connections[client].id]

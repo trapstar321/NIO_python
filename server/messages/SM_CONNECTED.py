@@ -7,4 +7,4 @@ class SM_CONNECTED(ServerMessage):
     def __init__(self, idx):
         ServerMessage.__init__(self)
 
-        self.put_string(idx)
+        self.put_object(idx)
